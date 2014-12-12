@@ -1,0 +1,53 @@
+
+*  Features
+   A Common Lisp on top of Javascript.  Runs on Node.JS and in
+   browser.  Has natural built-in integration with JS, jQuery. CLOS
+   system & MOP is compatable with jQuery.  Built in Angular like data
+   binding and templates, made more powerful by lisp macros and
+   extreemly small bytecode that makes it more efficient than
+   Javascript.  Compiled worlds allow complex extreemly efficient
+   loading of compiled pages. Byte code BUS system and distributed
+   memory and garbage collection make for extreemly powerful
+   cooperative cloud envirments. Integrated into quicklisp and asdf
+   means thousands of libraries available.  In memory git-ized
+   filesystem allow you to map and unmap folders at will storing use
+   state locally either for user data or as a performance cache.
+   Integration with javascript.asm means that the core is extreemly
+   fast.  Often faster than Javascript itself.
+   
+
+   Right now, all the above is a lie, of course. But as futeristic as
+   it is, it's not that far fetched.
+
+
+* TODO
+  
+  
+** Commin Lisp ANSI normalization
+
+  - Bring file i/o into line with standard.
+  - setf
+  - start testing with the glisp test library.
+ 
+** Features/application
+  - Processing like graphics library.
+  - wings 3d like 3d graphics library.
+  - Absorge ymacs, i.e. convert javascript from the top down to common lisp.
+  - presentation manager framework.
+  - angular framework.
+  - CLOS/MOP integrated with jQuery.
+
+
+
+* Previous Credit
+
+
+  Since all the above is hilariously beyond my technical ability and
+  resources of time, continue advertizing Bazon's real project that
+  insired (dubious distinction) this madness.
+
+
+- [slip.lisperator.net](http://slip.lisperator.net/) for more information.
+- [A screencast at Vimeo](https://vimeo.com/42070553).
+- [Play with it](http://slip.lisperator.net/s/demo/?ide) (requires popups).
+- [Follow me on Twitter](https://twitter.com/#!/mcbazon)

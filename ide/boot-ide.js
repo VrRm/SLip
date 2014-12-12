@@ -9,7 +9,8 @@
                 "lisp/format.lisp",
                 "lisp/ffi.lisp",
                 "lisp/conditions.lisp",
-                "ide/ide.lisp"
+            "ide/ide.lisp",
+            "ide/run-ymacs.lisp"
         ];
 
         LispMachine.extend({
@@ -108,7 +109,8 @@
         // recompile_all();
 
         function open_ide() {
-                window.open("ide/ymacs.html", "SLIP",
+
+                window.child_window = window.open("ide/ymacs.html", "SLIP",
                             "width=800,height=600,menubar=0,toolbar=0,location=0,personalbar=0,status=0,dependent=1,chrome=1");
         };
 

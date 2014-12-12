@@ -824,4 +824,6 @@ function load(url, cont) {
         xhr.send();
 };
 
-make_desktop();
+//make_desktop();
+
+window.opener.MACHINE.eval_string("YMACS", "(%make-desktop)");

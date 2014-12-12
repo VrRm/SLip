@@ -25,6 +25,7 @@
           set-text-baseline
           set-text-align
           measure-text
+          init-default-canvas          
           fill-text
           set-rotation
           set-scale))
@@ -203,8 +204,8 @@
     (forward y)
     (right (- 180 β))
     (forward y)
-    (right (- 180 α))
-    (forward (* 2 x))))
+    (right (- 180 α)) 
+   (forward (* 2 x))))
 
 (defun draw-turtle ()
   (let ((*canvas* *turtle-canvas*)
@@ -258,4 +259,6 @@
           (%dom-fill-text *context* text 0 0))
       (%dom-restore *context*))))
 
-(init-canvas 400 400)
+(defun init-default-canvas ()
+  (init-canvas 400 400)
+  )
