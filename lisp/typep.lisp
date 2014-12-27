@@ -1,13 +1,3 @@
-
-
-
-The Common Lisp Type
-
-
-
-
-
-
 (defun %%typep (object type &optional (strict t))
   (declare (type ctype type))
   (etypecase type
