@@ -14,14 +14,6 @@
    |
    +--> package
    |
-   +--> symbol
-   |    |
-   |	+--> keyword
-   |	|
-   |	+--> boolean
-   |	|
-   |	+--> <null list>
-   |
    +--> restart
    |
    +--> random-state
@@ -31,10 +23,102 @@
    +--> structure- object
    |
    +--> standard-object
+   |    |
+   |	+--> class
+   |	|    |
+   | 	|    +--> built-in-class
+   |	|    |
+   |	|    +--> standard-class
+   |	|    |
+   |	|    +--> structure-class
+   |    +--> method
+   |	|
+   |	+--> standard-method
+   |
+   +--> method-combination
+   |
+   +--> character
+   |     |
+   |    +--> extended-character
+   |	|
+   |	+--> base-character
+   |	     |
+   |	     +--> standard-character
+   |   
+   +--> sequence
+   |    |
+   |	+--> list
+   |    |    |
+   |    |    +--> symbol
+   |    |    |    |
+   |    |    |	  +--> keyword
+   |    |    |	  |
+   |    |    |	  +--> boolean
+   |    |    |	  |
+   |    |    |	  +--> null
+   |    |    |
+   |    |    +--> cons
+   |    +--> array
+   |         |
+   |	     +--> simple-array
+   |	          |
+   |		  +--> vector 
+   |		       |
+   |		       +--> string 
+   |		       |    |
+   |		       |    +--> simple-string
+   |		       |         |
+   |		       |	 +--> base-string
+   |		       |
+   |		       +--> simple-vector
+   |		       |
+   |		       +--> bit-vector
+   |		            |
+   |			    +-- simple-bit-vector
+   |
+   +--> function
+   |    | 
+   |	+--> compiled-function
+   |	|
+   |	+--> generic-function
+   |         |
+   |	     +--> standard-generic-funciton
+   |
+   +--> pathname
+   |     |
+   |     +--> logical-pathname
+   |
+   +--> number
+   |    |
+   |	+--> complex
+   |    |
+   |    +--> real
+   |	     |
+   |	     +--> float
+   |	     |    |
+   |	     |    +--> short-float
+   |	     |	  |
+   |	     |	  +--> single-float
+   |	     |	  |
+   |	     |	  +--> double-float
+   |	     |	  |
+   |	     |	  +--> long-float
+   |	     |
+   |	     +--> rational
+   |	          |
+   |		  +--> integer
+   |              |    |
+   |		  |    +--> signed-byte
+   |		  |         |
+   |		  |         +--> unsigned-byte
+   |		  |              |
+   |		  |              +--> bit
+   |		  +--> ratio
+   |
+   +--> condition
         |
-	+--> class
+	+--> serious-condition
 	     |
-	     +--> built-in-class
+	     +--> storage-condition
 	     |
-	     +--> 
-
+	     +--> error
