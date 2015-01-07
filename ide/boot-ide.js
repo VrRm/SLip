@@ -9,6 +9,7 @@
                 "lisp/format.lisp",
                 "lisp/ffi.lisp",
                 "lisp/conditions.lisp",
+                "lisp/io.lisp",
                 "ide/ide.lisp"
         ];
 
@@ -131,6 +132,8 @@
                                 open_ide();
                 });
         };
+
+        window.recompile_all = recompile_all;
 
         if (/\?recompile$/.test(window.location)) {
                 recompile_all();

@@ -10,6 +10,7 @@
           serious-condition
           warning
           signal
+	  typep
           handler-case
           handler-bind
           ignore-errors))

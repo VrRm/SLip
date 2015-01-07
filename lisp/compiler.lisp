@@ -930,9 +930,15 @@
                         (cdr (funcall reader 'next))))))
       (rec nil (cdr (funcall reader 'next))))))
 
+(defun make-symbol (str)
+  (%make-symbol str))
+
+(defun find-package (str)
+  (%find-package str))
+
 (defun %load (url)
-  (let ((*current-file* url)
-        (code (%get-file-contents (make-url url))))
+  (setq *current-file* url)
+  (let ((code (%get-file-contents (make-url url))))
     (unless code (error (strcat "Unable to load file: " url)))
     (compile-string code)))
 

@@ -1,0 +1,1 @@
+CONST(l(s("DEFUN-JS","SL-FFI"))),CONST(p("SL")),PRIM(s("%IMPORT","%"),2),POP()
