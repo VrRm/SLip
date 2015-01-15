@@ -1,10 +1,10 @@
-(defclass my-position () ())
+(defclass class-a () ())
 
-(defclass x-y-position (my-position)
+(defclass class-b (class-a)
   ((x :initform 0 :initarg :x)
    (y :initform 0 :initarg :y)))
 
-(setq p1 (make-instance ’x-y-position :x 2 :y 0))
+(setq p1 (make-instance 'class-b :x 2 :y 0))
 
 
 (defclass input-stream ()
@@ -39,6 +39,10 @@
 	      (setf col (1+ col)))
 	  ch)
 	nil)))
+
+(defclass lisp-reader ()
+  ((input :accessor input :initarg :input)))
+
 
 ////////////////// basic parser
 function lisp_reader(code) {
