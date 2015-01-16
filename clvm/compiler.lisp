@@ -1,12 +1,3 @@
-(defclass class-a () ())
-
-(defclass class-b (class-a)
-  ((x :initform 0 :initarg :x)
-   (y :initform 0 :initarg :y)))
-
-(setq p1 (make-instance 'class-b :x 2 :y 0))
-
-
 (defclass input-stream ()
   ((pos :accessor pos :initform 0)
    (line :accessor line :initform 0)
@@ -22,10 +13,10 @@
       (aref (text s) (pos s))
       nil))
 
-(setf s (make-instance
-	 'input-stream :text
-	 (let ((nl (string #\Newline)))
-	   (concatenate 'string "this" nl "is" nl  "an" nl "input" nl "stream"))))
+;; (setf s (make-instance
+;; 	 'input-stream :text
+;; 	 (let ((nl (string #\Newline)))
+;; 	   (concatenate 'string "this" nl "is" nl  "an" nl "input" nl "stream"))))
 
 (defmethod next ((s input-stream))
   (with-slots (pos line col text) s
@@ -41,66 +32,54 @@
 	nil)))
 
 (defclass lisp-reader ()
-  ((input :accessor input :initarg :input)))
+  ((stream :accessor stream)))
 
+(defmethod read-while ((reader lisp-reader) reader-func)
+  (with-slots (stream)
+      (loop
+	 while (let ((ch (peek stream)))
+		     (and ch (funcall reader-func ch)))
+	   (collect (next stream)))))
+
+
+(defmethod skip-whitespace ((reader lisp-reader))
+  (with-slots (stream)
+      (read-while reader (lambda (ch)
+			   (member ch '(#Tab #\Space #\Page #\Return
+					#\Newline #\Linefeed))))))
+
+(defmethod initialize-instance :after ((reader lisp-reader) &key code)
+      (let ((stream (make-instance 'input-stream :text code)))
+
+(defmethod skip ((reader lisp-reader) expected)
+  (with-slots (stream)
+      (unless (eq (next stream) expecting)
+	(error "Expecting: ~S" (string expecting)))))
+
+
+(defmacro str (&rest items)
+  `(concatenate 'string ,@items))
+
+
+
+(defmethod read-escaped ((reader lisp-reader) start end inces)
+  (with-slots (stream) reader
+    (skip reader start)
+    (let ((escaped nil)
+	  (new-string "")
+	  (ch nil))
+      (loop while (peek stream)
+	   (setf ch (next stream))
+	   (cond (escaped (setf new-string (str new-string (string ch))))
+		 ((eq ch #\\)
+		  (when inces (str new-string (string ch)))
+		  (setf escaped t))
+		 ((eq ch end) (loop-finish))
+		 (t (setf new-string (str new-string (string ch))))))
+      new-string)))
 
 ////////////////// basic parser
 function lisp_reader(code) {
-        var input = new InputStream(code);
-        var list = LispCons.fromArray;
-        function next() { return input.next(); };
-        function peek() { return input.peek(); };
-        function croak(msg) {
-                throw new Error(msg
-                                + " / line: " + input.line
-                                + ", col: " + input.col
-                                + ", pos: " + input.pos);
-        };
-        function read_while(pred) {
-                var buf = "", ch;
-                while ((ch = peek()) && pred(ch)) {
-                        buf += next();
-                }
-                return buf;
-        };
-        function skip_ws() {
-                read_while(function(ch){
-                        switch (ch) {
-                            case " ":
-                            case "\n":
-                            case "\t":
-                            case "\x0C":
-                            case "\u2028":
-                            case "\u2029":
-                            case "\xA0":
-                                return true;
-                        }
-                });
-        };
-        function skip(expected) {
-                if (next() != expected)
-                        croak("Expecting " + expected);
-        };
-        function read_escaped(start, end, inces) {
-                skip(start);
-                var escaped = false;
-                var str = "";
-                while (peek()) {
-                        var ch = next();
-                        if (escaped) {
-                                str += ch;
-                                escaped = false;
-                        } else if (ch == "\\") {
-                                if (inces) str += ch;
-                                escaped = true;
-                        } else if (ch == end) {
-                                break;
-                        } else {
-                                str += ch;
-                        }
-                }
-                return str;
-        };
         function read_string() {
                 return read_escaped("\"", "\"");
         };
