@@ -4,7 +4,7 @@
   :version "0.0.1"
   :author ""
   :license "BSD like"
-  :depends-on (:inferior-shell :hu.dwim.serializer :osicat :cl-openstack :cl-openstack :fare-utils)
+  :depends-on (:inferior-shell :hu.dwim.serializer :osicat :cl-openstack :cl-openstack :fare-utils :regex)
   :components ((:file packages)
 	       (:file list :depends-on (packages))
 	       (:file compiler :depends-on (list))

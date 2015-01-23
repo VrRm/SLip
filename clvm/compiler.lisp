@@ -56,11 +56,8 @@
       (unless (eq (next stream) expecting)
 	(error "Expecting: ~S" (string expecting)))))
 
-
 (defmacro str (&rest items)
   `(concatenate 'string ,@items))
-
-
 
 (defmethod read-escaped ((reader lisp-reader) start end inces)
   (with-slots (stream) reader
@@ -78,68 +75,59 @@
 		 (t (setf new-string (str new-string (string ch))))))
       new-string)))
 
-////////////////// basic parser
-function lisp_reader(code) {
-        function read_string() {
-                return read_escaped("\"", "\"");
-        };
-        function read_regexp() {
-                var str = read_escaped("/", "/", true);
-                var mods = read_while(function(ch){
-                        switch (ch.toLowerCase()) {
-                            case "y":
-                            case "m":
-                            case "g":
-                            case "i":
-                                return true;
-                        }
-                }).toLowerCase();
-                return new RegExp(str, mods);
-        };
-        function skip_comment() {
-                read_while(function(ch){ return ch && ch != "\n" });
-        };
-        function read_symbol() {
-                var str = read_while(function(ch){
-                        if (UNICODE.letter.test(ch) ||
-                            (ch >= "0" && ch <= "9"))
-                                return true;
-                        switch (ch) {
-                            case "%": case "$": case "_": case "-":
-                            case ":": case ".": case "+": case "*":
-                            case "@": case "!": case "?": case "&":
-                            case "=": case "<": case ">":
-                            case "[": case "]":
-                            case "{": case "}":
-                            case "/":
-                                return true;
-                        }
-                });
-                if (str.length > 0 && /^-?[0-9]*\.?[0-9]*$/.test(str)) {
-                        var ret = parseFloat(str);
-                        if (!isNaN(ret)) return ret;
-                }
-                str = str.toUpperCase();
-                var m = /^(.*?)::?(.*)$/.exec(str);
-                if (m) {
-                        var pak = LispPackage.get(m[1] || "KEYWORD");
-                        return pak.find_or_intern(m[2]);
-                }
-                var pak = LispPackage.get("%").intern("*PACKAGE*");
-                if (pak.value) return pak.value.find_or_intern(str);
-                return LispSymbol.get(str);
-        };
-        function read_char() {
-                var ch = next() + read_while(function(ch){
-                        return (ch >= "a" && ch <= "z") ||
-                                (ch >= "A" && ch <= "z") ||
-                                (ch >= "0" && ch <= "9") ||
-                                ch == "-" || ch == "_";
-                });
-                if (ch.length > 1) {
-                        if (/^U[0-9a-f]{4}$/i.test(ch)) {
-                                ch = LispChar.fromCode(parseInt(ch.substr(1), 16));
-                        } else {
+(defmethod read-string ((reader lisp-reader))
+  (with-slots (stream) reader
+    (read-escaped stream #\" #\")))
+
+(defmethod read-regexp ((reader lisp-reader))
+  (let ((str  (read_escaped reader #\" #\" t))
+	(mods (string-downcase
+	       (read-while
+		(lambda (ch)
+		  (member (char-downcase ch)
+			  #'y #'m #'g #'i))))))
+    (make-regexp str mods)))
+
+(defmethod skip-comment ((reader lisp-reader))
+  (with-slots (stream) reader
+    (read-while (lambda (ch)(and ch (not (eq ch #\Newline)))))))
+
+(defun read-symbol ((reader lisp-reader))
+  (let ((str
+	 (read-while
+	  (lambda (ch)
+	    (or (unicode-letter-p ch)
+		(number-code-p ch)
+		(member
+		 '(#'% #'$ #'_ #'- #': #'. #'+ #'* #'@ #'! #'? #'& #'= #'< #'> #'[ #'] #'{ #'} #'/)))))))
+    (if (and (> (length str) 0) (regexp  "/^-?[0-9]*\.?[0-9]*$/" str))
+	(let ((var (parse-float str)))
+	  (if (is-float str)
+	      (parse-float str)
+                (let ((str (up-case str))
+		      (m (regexp "/^(.*?)::?(.*)$/" str)))
+		  (if m
+		      (let ((pak (or (lisp-package::get (aref m 1))
+				     "KEYWORD")))
+                        (find-or-intern pak (aref m 2)))
+                (let ((pak  (intern (lisp-package::get "%") "*PACKAGE*")))
+		  (if  (pak.value)
+		       (find-or-intern str)
+		       (lisp-symbol-get str))))))))))
+
+
+(defun read-char ()
+  (let ((ch (+ (next)
+	       (read-while
+		(lambda (ch)
+		  (or (and (>= ch #'a) (<= ch #'z))
+		      (and (>= ch #'A) (<= ch #'Z))
+		      (and (>= ch #'0) (<= ch #'9))
+		      (member ch '(#\- #\_))))))))
+    (if (> (length ch) 1)
+	(if (regexp::test "/^U[0-9a-f]{4}$/i" ch)
+	    (setf ch (lisp-char-from-code (parse-int (substr ch) 16)))
+	    (progn
                                 ch = LispChar.fromName(ch);
                                 if (ch == null)
                                         croak("Unknown character name: " + ch);
@@ -148,6 +136,9 @@ function lisp_reader(code) {
                 }
                 return LispChar.get(ch);
         };
+
+////////////////// basic parser
+function lisp_reader(code) {
         function read_sharp() {
                 skip("#");
                 switch (peek()) {
