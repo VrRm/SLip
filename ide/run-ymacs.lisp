@@ -10,4 +10,15 @@
 (import '(sl-ffi:defun-js))
 
 (defun-js %make-desktop (context)
-  "window.child_window.make_desktop();")
+  "var WINDOW = window.opener || window.parent;
+   window.child_window.make_desktop(WINDOW);")
+
+
+;;(defun-js %get-parent-window ()
+;;  "return window.opener || window.parent;")
+
+;;(defun-js make-desktop-alt ()
+;;  (%make-desktop-alt (%get-parent-window)))
+
+;;(defun-js %make-desktop-alt (w)
+;;  "window.child_window.make_desktop(w);")

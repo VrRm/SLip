@@ -1,3 +1,3 @@
 CONST(l(s("DEFUN-JS","SL-FFI"))),CONST(p("YMACS")),PRIM(s("%IMPORT","%"),2),POP()
-,CONST("function _make_desktop (context) { window.child_window.make_desktop(); }"),PRIM(s("%JS-EVAL","%"),1),LET(1),CONST(s("%MAKE-DESKTOP","YMACS")),FN([ARG_(0),LVAR(1,0),NIL(),LVAR(0,0),PRIM(s("%JS-APPLY","%"),3),RET()],s("%MAKE-DESKTOP","YMACS")),PRIM(s("SET-SYMBOL-FUNCTION!","%"),2),POP(),UNFR(1,0)
+,CONST("function _make_desktop (context) { var WINDOW = window.opener || window.parent;\n   window.child_window.make_desktop(WINDOW); }"),PRIM(s("%JS-EVAL","%"),1),LET(1),CONST(s("%MAKE-DESKTOP","YMACS")),FN([ARG_(0),LVAR(1,0),NIL(),LVAR(0,0),PRIM(s("%JS-APPLY","%"),3),RET()],s("%MAKE-DESKTOP","YMACS")),PRIM(s("SET-SYMBOL-FUNCTION!","%"),2),POP(),UNFR(1,0)
 ,CONST("ide/run-ymacs.lisp"),CONST([[s("%MAKE-DESKTOP","YMACS"),"DEFUN",251]]),PRIM(s("%GROK-XREF-INFO","%"),2),POP()
