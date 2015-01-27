@@ -1,135 +1,333 @@
-(defclass lisp-cleanup
-)
-(defclass lisp-ret)
+var LispMachine = DEFCLASS("LispMachine", null, function(D, P){
+        var BASE_PACK = LispPackage.get("%");
 
-(defmethod run ((lr lisp-return))
-  )
+        // normal RET context
+        function LispRet(m, pc) {
+                this.f = m.f;
+                this.code = m.code;
+                this.pc = pc;
+                this.env = m.env;
+                this.denv = m.denv;
+                this.n_args = m.n_args;
+                //if (m.trace) this.trace = m.trace.slice();
+        };
+        LispRet.prototype.run = function(m) {
+                m.f = this.f;
+                m.code = this.code;
+                m.pc = this.pc;
+                m.env = this.env;
+                m.denv = this.denv;
+                m.n_args = this.n_args;
+                //if (this.trace) m.trace = this.trace;
+        };
 
-(defclass lisp-long-ret
-)
+        function LispCleanup(ret, addr) {
+                this.ret = ret;
+                this.addr = addr;
+        };
+        LispCleanup.prototype.run = function(m) {
+                this.ret.unwind(m, this.addr);
+        };
 
-(defmethod unwind ((llr lisp-long-return) m addr)
-)
+        // return context for TAGBODY and BLOCK
+        function LispLongRet(m) {
+                this.f = m.f;
+                this.code = m.code;
+                this.env = m.env;
+                this.denv = m.denv;
+                this.slen = m.stack.length;
+                this.n_args = m.n_args;
+                //if (m.trace) this.trace = m.trace.slice();
+        };
+        LispLongRet.prototype.unwind = function(m, addr) {
+                m.f = this.f;
+                m.code = this.code;
+                m.env = this.env;
+                m.denv = this.denv;
+                m.stack.length = this.slen;
+                m.pc = addr;
+                m.n_args = this.n_args;
+                //if (this.trace) m.trace = this.trace;
+        };
 
-(defmethod run ((lr lisp-long-return))
-  )
+        var NO_RET_VAL = {};
+        LispLongRet.prototype.run = function(m, addr) {
+                // figure out if we need to execute cleanup hooks
+                var self = this;
+                var val = arguments.length > 2 ? arguments[2] : NO_RET_VAL;
+                (function doit() {
+                        var p = m.denv;
+                        while (p && p != self.denv) {
+                                var c = p.car;
+                                if (c instanceof LispCleanup) {
+                                        m.after_cleanup = doit;
+                                        c.run(m);
+                                        return;
+                                }
+                                p = p.cdr;
+                        }
+                        self.unwind(m, addr);
+                        if (val !== NO_RET_VAL) m.push(val);
+                })();
+        };
 
+        // continuations
+        function LispCC(m) {
+                this.stack = m.stack.slice();
+                this.denv = m.denv;
+                //if (m.trace) this.trace = m.trace.slice();
+        };
+        LispCC.prototype.run = function(m) {
+                m.stack = this.stack.slice();
+                m.denv = this.denv;
+                //if (this.trace) m.trace = this.trace.slice();
+        };
 
-(defclass lisp-continuation
-)
+        // dynamic bindings
+        function LispBinding(symbol, value) {
+                this.symbol = symbol;
+                this.value = value;
+        };
 
-(defmethod run ((lc lisp-continuation))
-  )
+        function LispCatch(m, addr, tag) {
+                this.ret = new LispLongRet(m);
+                this.addr = addr;
+                this.tag = tag;
+        };
+        LispCatch.prototype.run = function(m, retval) {
+                this.ret.run(m, this.addr, retval);
+        };
 
-(defclass lisp-dynamic-binding
-)
+        D.XREF = {};            // store per-file cross-reference information
 
-(defmethod run ((ldb lisp-dynamic-binding))
-  )
+        /// constructor
+        P.INIT = function(pm) {
+                this.code = null;
+                this.pc = null;
+                this.stack = null;
+                this.env = null;
+                this.denv = pm ? pm.denv : null;
+                this.n_args = null;
+                this.status = null;
+                this.error = null;
+                this.process = null;
+                this.f = null;
+                this.after_cleanup = null;
+                //this.trace = [];
+        };
+        P.find_dvar = function(symbol) {
+                if (symbol.special()) {
+                        var p = this.denv;
+                        while (p != null) {
+                                var el = p.car;
+                                if (el instanceof LispBinding && el.symbol === symbol)
+                                        return el;
+                                p = p.cdr;
+                        }
+                }
+                return symbol;
+        };
+        P.gvar = function(symbol) {
+                return this.find_dvar(symbol).value;
+        };
+        P.gset = function(symbol, val) {
+                this.find_dvar(symbol).value = val;
+        };
+        P.dynpush = function(thing) {
+                this.denv = new LispCons(thing, this.denv);
+        };
+        P.bind = function(symbol, i) {
+                this.denv = new LispCons(
+                        new LispBinding(symbol, this.env.car[i]),
+                        this.denv
+                );
+                this.env.car[i] = null;
+        };
+        P.push = function(v) {
+                this.stack.push(v);
+        };
+        P.pop = function() {
+                return this.stack.pop();
+        };
+        P.pop_number = function(error) {
+                var n = this.pop();
+                if (typeof n != "number") {
+                        error("Number expected, got " + this.dump(n));
+                }
+                return n;
+        };
+        P.mkret = function(pc) {
+                return new LispRet(this, pc);
+        };
+        P.unret = function(ret) {
+                ret.run(this);
+        };
+        P.mkcont = function() {
+                return new LispCC(this);
+        };
+        P.uncont = function(cont) {
+                cont.run(this);
+        };
+        P.top = function() {
+                return this.stack[this.stack.length - 1];
+        };
+        P.loop = function() {
+                while (this.pc < this.code.length) {
+                        //inc_stat("OP_" + this.code[this.pc]._name);
+                        this.code[this.pc++].run(this);
+                        if (this.pc == null) break;
+                }
+                return this.pop();
+        };
+        P.atomic_call = function(closure, args) {
+                if (!args) args = [];
+                // stop the world, call closure, resume the world
+                var save_code = this.code;
+                var save_env = this.env;
+                var save_denv = this.denv;
+                var save_stack = this.stack;
+                var save_nargs = this.n_args;
+                var save_pc = this.pc;
+                var save_f = this.f;
+                //var save_trace = this.trace;
+                this.code = closure.code;
+                this.env = null;
+                this.stack = [ new LispRet(this, null) ].concat(args);
+                this.n_args = args.length;
+                this.pc = 0;
+                this.f = closure;
+                //if (this.trace) this.trace = [ closure, args ];
+                try {
+                        return this.loop();
+                } finally {
+                        //this.trace = save_trace;
+                        this.f = save_f;
+                        this.pc = save_pc;
+                        this.n_args = save_nargs;
+                        this.stack = save_stack;
+                        this.denv = save_denv;
+                        this.env = save_env;
+                        this.code = save_code;
+                }
+        };
+        P._exec = function(code) {
+                this.code = code;
+                this.env = null;
+                this.stack = [];
+                this.pc = 0;
+                this.f = null;
+                return this.loop();
+        };
+        P._call = function(closure, args) {
+                args = LispCons.toArray(args);
+                this.stack = [ new LispRet(this, null) ].concat(args);
+                this.code = closure.code;
+                this.env = closure.env;
+                this.n_args = args.length;
+                this.pc = 0;
+                this.f = closure;
+                while (true) {
+                        if (this.pc == null) return this.pop();
+                        this.code[this.pc++].run(this);
+                }
+        };
 
+        P._callnext = function(closure, args) {
+                this.stack.push(this.mkret(this.pc));
+                //if (this.trace) this.trace.push([ closure, LispCons.toArray(args) ]);
+                this.code = closure.code;
+                this.env = closure.env;
+                var n = 0;
+                while (args != null) {
+                        this.stack.push(args.car);
+                        args = args.cdr;
+                        n++;
+                }
+                this.n_args = n;
+                this.pc = 0;
+                this.f = closure;
+                return false;
+        };
 
-(defclass lisp-catch
-)
+        P.set_closure = function(closure) {
+                var args = slice(arguments, 1);
+                this.stack = [ new LispRet(this, null) ].concat(args);
+                this.code = closure.code;
+                this.env = closure.env;
+                this.n_args = args.length;
+                this.pc = 0;
+                this.f = closure;
+                //if (this.trace) this.trace = [ closure, args ];
+        };
 
-(defmethod run ((ldb lisp-dynamic-binding))
-  )
+        P.run = function(quota) {
+                var err = null;
+                try {
+                        while (quota-- > 0) {
+                                if (this.pc == null) {
+                                        this.status = "finished";
+                                        break;
+                                }
+                                this.code[this.pc++].run(this);
+                                if (this.status != "running")
+                                        break;
+                        }
+                } catch(ex) {
+                        if (ex instanceof LispPrimitiveError) {
+                                var pe = LispSymbol.get("PRIMITIVE-ERROR", LispPackage.get("SL"));
+                                if (pe && pe.func()) {
+                                        // RETHROW as Lisp error.
+                                        this._callnext(pe.func(), LispCons.fromArray([ "~A", ex.message ]));
+                                        return null;
+                                }
+                        }
+                        // we fucked up.
+                        this.status = "halted";
+                        err = this.error = ex;
+                }
+                return err;
+        };
 
-(defclass lisp-machine
-)
+        var OPS = {};
 
-(defmethod init ((lm lisp-machine))
-  )
+        D.stats = {
+        };
 
-(defmethod find-dynamic-variable ((lm lisp-machine) symbol)
-  )
+        function inc_stat(name) {
+                if (!D.stats[name]) D.stats[name] = 0;
+                ++D.stats[name];
+        };
 
-(defmethod get-global-value ((lm lisp-machine) symbol)
-  )
+        function max_stat(name, val) {
+                if (!HOP(D.stats, name) || D.stats[name] < val)
+                        D.stats[name] = val;
+        };
 
-(defmethod set-global-value ((lm lisp-machine) symbol value)
-  )
-
-(defmethod push-global-value ((lm lisp-machine) symbol value)
-  )
-
-(defmethod bind-value ((lm lisp-machine) symbol value)
-  )
-
-(defmethod push-stack ((lm lisp-machine) value)
-  )
-
-(defmethod pop-stack ((lm lisp-machine) value)
-  )
-
-(defmethod make-return ((lm lisp-machine) value)
-  )
-
-
-(defmethod unreturn ((lm lisp-machine) value)
-  )
-
-(defmethod make-contination ((lm lisp-machine))
-  )
-
-(defmethod uncontination ((lm lisp-machine))
-  )
-
-(defmethod top ((lm lisp-machine))
-  )
-
-(defmethod loop ((lm lisp-machine))
-  )
-
-(defmethod attomic-call ((lm lisp-machine) clojure args)
-  )
-
-(defmethod exec ((lm lisp-machine) clojure args)
-  )
-
-(defmethod low-level-call ((lm lisp-machine) clojure args)
-  )
-
-(defmethod call-next ((lm lisp-machine) clojure args)
-  )
-
-(defmethod set-clojure ((lm lisp-machine) clojure)
-  )
-
-(defmethod run ((lm lisp-machine) quota)
-  )
-
-(defmethod set-max-statistics ((lm lisp-machine) quota)
-  )
-
-;;
-(defmethod increment-stat ((lm lisp-machine) quota)
-  )
-
-(defmethod increment-stat ((lm lisp-machine) quota)
-  )
-
-(defmacro splice-code (statistic-variable steps-to-snip &optional (array-to-insert nil))
-  (let ((rest-of-code
-)
-
-(defmethod optimize-code ((lm lisp-machine))
-  (let ((el (aref code i)))
-    (if (lm-symbolp el)
-	(if (not (used-label code el))
-	    (progn (code-splice i 1)
-		   (increment-statistic 'drop-label)
-		   t)
-	    nil))
-    (case (aref el 0)
-      ('vars (= (aref el 1) 1)
-(defmethod find-target ((lm lisp-machine) code label)
-  (gethash code label))
-
-(defmethod use-label-p ((lm lisp-machine) code label)
-  (gethash code label))
-
-(defmethod assemble ((lm lisp-machine) code)
+        var optimize = (function(){
+                function find_target(code, label) {
+                        return code.indexOf(label);
+                };
+                function used_label(code, label) {
+                        for (var i = code.length; --i >= 0;) {
+                                var el = code[i];
+                                if (!LispSymbol.is(el)) {
+                                        if (el[1] === label)
+                                                return true;
+                                        if (el[0] === "FN" && used_label(el[1], label))
+                                                return true;
+                                }
+                        }
+                };
                 function optimize1(code, i) {
+                        var el = code[i];
+                        if (LispSymbol.is(el)) {
+                                if (!used_label(code, el)) {
+                                        code.splice(i, 1);
+                                        inc_stat("drop_label");
+                                        return true;
+                                }
+                                return false;
+                        }
                         switch (el[0]) {
                             case "VARS":
                                 if (el[1] == 1) {
