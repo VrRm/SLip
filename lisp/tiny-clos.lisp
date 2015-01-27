@@ -302,6 +302,15 @@
     (setf class (find-class class)))
   (%memq class (class-cpl (class-of obj))))
 
+
+
+
+;;; (class-name (class-of "string"))
+;;; (defun type-of (o)
+;;;   (is-a o))
+
+
+
 ;;
 ;; Initialization protocol
 ;;

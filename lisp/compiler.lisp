@@ -137,18 +137,18 @@
   (let ((vexpr (gensym "CASE")))
     `(let ((,vexpr ,expr))
        ,(labels ((recur (cases)
-                   (when cases
-                     (if (and (listp (caar cases)) (caar cases))
-                         `(if (member ,vexpr ',(caar cases))
-                              (progn ,@(cdar cases))
-                              ,(recur (cdr cases)))
-                         (if (and (not (cdr cases))
-                                  (member (caar cases) '(otherwise t)))
-                             `(progn ,@(cdar cases))
-                             `(if (eq ,vexpr ',(caar cases))
-                                  (progn ,@(cdar cases))
-                                  ,(recur (cdr cases))))))))
-          (recur cases)))))
+			(when cases
+			  (if (and (listp (caar cases)) (caar cases))
+			      `(if (member ,vexpr ',(caar cases))
+				   (progn ,@(cdar cases))
+				   ,(recur (cdr cases)))
+			      (if (and (not (cdr cases))
+				       (member (caar cases) '(otherwise t)))
+				  `(progn ,@(cdar cases))
+				  `(if (eq ,vexpr ',(caar cases))
+				       (progn ,@(cdar cases))
+				       ,(recur (cdr cases))))))))
+		(recur cases)))))
 
 (labels ((finished (tails)
            (when tails
@@ -395,7 +395,7 @@
 (defmacro without-interrupts body
   `(let ((old (%no-interrupts t)))
      (unwind-protect
-         (progn ,@body)
+	  (progn ,@body)
        (%no-interrupts old))))
 
 (defun defun-en-course (name)
@@ -802,7 +802,7 @@
                                    ,@body))
                           (,looop ,@(map (lambda (x)
                                            (if (consp x) (cadr x)))
-                                      bindings)))
+					 bindings)))
                        env val? more?))
                (with-seq-output <<
                  (let* ((bindings (get-bindings bindings t))
@@ -930,9 +930,15 @@
                         (cdr (funcall reader 'next))))))
       (rec nil (cdr (funcall reader 'next))))))
 
+(defun make-symbol (str)
+  (%make-symbol str))
+
+(defun find-package (str)
+  (%find-package str))
+
 (defun %load (url)
-  (let ((*current-file* url)
-        (code (%get-file-contents (make-url url))))
+  (setq *current-file* url)
+  (let ((code (%get-file-contents (make-url url))))
     (unless code (error (strcat "Unable to load file: " url)))
     (compile-string code)))
 
@@ -941,14 +947,19 @@
       (strcat *url-prefix* url)
       url))
 
+;; (defun uri-formatted-string-p (str)
+;;   (and (stringp str)
+
+
+
 (defun load (url)
   (let ((*package* *package*)
-        (*read-table* *read-table*))
+	(*read-table* *read-table*))
     (%load url)))
 
 ;;;
 
-EOF
+	EOF
 
-(let ((*current-file* "compiler.lisp"))
-  (console.print (compile-string (%js-eval "window.CURRENT_FILE"))))
+	(let ((*current-file* "compiler.lisp"))
+	  (console.print (compile-string (%js-eval "window.CURRENT_FILE"))))

@@ -117,8 +117,61 @@
    |
    +--> condition
         |
+	+--> warning
+	|    |
+	|    +--> style-warning
+        |
 	+--> serious-condition
 	     |
 	     +--> storage-condition
 	     |
 	     +--> error
+	          |
+		  +--> type-error
+		  |    | 
+		  |    +--> simple-condition
+		  |         |
+		  |         +--> simple-type-error
+		  |         |
+		  |         +--> simple-error
+	          |
+		  +--> program-error
+	          |
+		  +--> control-error
+	          |
+		  +--> package-error
+	          |
+		  +--> print-not-readable
+	          |
+		  +--> stream-error
+		  |    |
+		  |    +--> end-of-file
+	          |
+		  +--> parse-error
+		  |    |
+	          |    +--> reader-error
+		  |
+		  +--> cell-error
+		  |    |
+		  |    +--> undefined-function
+		  |    |
+		  |    +--> unbound-variable
+		  |    |
+		  |    +--> unbound-slot
+	          |
+		  +--> file-error
+	          |
+		  +--> arithmatic-error
+		       |
+		       +--> division-by-zero
+		       |
+		       +--> floating-point-inexact
+		       |
+		       +--> floating-point-overflow
+		       |
+		       +--> floating-point-underflow
+                       |
+		       +--> floating-point-invalid-operation
+
+
+

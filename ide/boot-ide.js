@@ -9,8 +9,9 @@
                 "lisp/format.lisp",
                 "lisp/ffi.lisp",
                 "lisp/conditions.lisp",
-            "ide/ide.lisp",
-            "ide/run-ymacs.lisp"
+                "ide/ide.lisp",
+                "ide/run-ymacs.lisp",
+                "lisp/io.lisp"
         ];
 
         LispMachine.extend({
@@ -133,6 +134,8 @@
                                 open_ide();
                 });
         };
+
+        window.recompile_all = recompile_all;
 
         if (/\?recompile$/.test(window.location)) {
                 recompile_all();

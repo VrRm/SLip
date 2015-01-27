@@ -1,45 +1,5 @@
-;; (sb!impl::fd-stream-fd-type stream)
-
-;; (defun load-stream (stream faslp)
-;;   (when (and (fd-stream-p stream)
-;; 	     (eq (sb!impl::fd-stream-fd-type stream) :directory))
-;;     (error 'simple-file-error
-;; 	   :pathname (pathname stream)
-;; 	   :format-control
-;; 	   "Can't LOAD a directory: ~s."
-;; 	   :format-arguments (list (pathname stream))))
-;;   (let* (;; Bindings required by ANSI.
-;; 	 (*readtable* *readtable*)
-;; 	 (*package* (sane-package))
-;; 	 ;; FIXME: we should probably document the circumstances
-;; 	 ;; where *LOAD-PATHNAME* and *LOAD-TRUENAME* aren't
-;; 	 ;; pathnames during LOAD.  ANSI makes no exceptions here.
-;; 	 (*load-pathname* (handler-case (pathname stream)
-;; 			    ;; FIXME: it should probably be a type
-;; 			    ;; error to try to get a pathname for a
-;; 			    ;; stream that doesn't have one, but I
-;; 			    ;; don't know if we guarantee that.
-;; 			    (error () nil)))
-;; 	 (*load-truename* (when *load-pathname*
-;; 			    (handler-case (truename stream)
-;; 			      (file-error () nil))))
-;; 	 ;; Bindings used internally.
-;; 	 (*load-depth* (1+ *load-depth*))
-;; 	 ;; KLUDGE: I can't find in the ANSI spec where it says
-;; 	 ;; that DECLAIM/PROCLAIM of optimization policy should
-;; 	 ;; have file scope. CMU CL did this, and it seems
-;; 	 ;; reasonable, but it might not be right; after all,
-;; 	 ;; things like (PROCLAIM '(TYPE ..)) don't have file
-;; 	 ;; scope, and I can't find anything under PROCLAIM or
-;; 	 ;; COMPILE-FILE or LOAD or OPTIMIZE which justifies this
-;; 	 ;; behavior. Hmm. -- WHN 2001-04-06
-;; 	 (sb!c::*policy* sb!c::*policy*))
-;;     (return-from load
-;;       (if faslp
-;; 	  (load-as-fasl stream verbose print)
-;; 	  (sb!c:with-compiler-error-resignalling
-;; 	      (load-as-source stream :verbose verbose
-;; 			      :print print))))))
+(in-package :sl)
+(import '(sl-ffi:defun-js))
 
 ;; (defun load (pathspec &key (verbose *load-verbose*) (print *load-print*)
 ;;              (if-does-not-exist t) (external-format :default))
