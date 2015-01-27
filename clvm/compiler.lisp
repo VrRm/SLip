@@ -56,11 +56,8 @@
       (unless (eq (next stream) expecting)
 	(error "Expecting: ~S" (string expecting)))))
 
-
 (defmacro str (&rest items)
   `(concatenate 'string ,@items))
-
-
 
 (defmethod read-escaped ((reader lisp-reader) start end inces)
   (with-slots (stream) reader
@@ -78,6 +75,7 @@
 		 (t (setf new-string (str new-string (string ch))))))
       new-string)))
 
+<<<<<<< HEAD
 (defun read-string ()
   (read-escaped "\"" "\""))
 
@@ -170,6 +168,88 @@
                         var frame = env[i]
                         for (var j = 0 j < frame.length ++j) {
                                 var el = frame[j]
+(defmethod read-string ((reader lisp-reader))
+  (with-slots (stream) reader
+    (read-escaped stream #\" #\")))
+
+(defmethod read-regexp ((reader lisp-reader))
+  (let ((str  (read_escaped reader #\" #\" t))
+	(mods (string-downcase
+	       (read-while
+		(lambda (ch)
+		  (member (char-downcase ch)
+			  #'y #'m #'g #'i))))))
+    (make-regexp str mods)))
+
+(defmethod skip-comment ((reader lisp-reader))
+  (with-slots (stream) reader
+    (read-while (lambda (ch)(and ch (not (eq ch #\Newline)))))))
+
+(defun read-symbol ((reader lisp-reader))
+  (let ((str
+	 (read-while
+	  (lambda (ch)
+	    (or (unicode-letter-p ch)
+		(number-code-p ch)
+		(member
+		 '(#'% #'$ #'_ #'- #': #'. #'+ #'* #'@ #'! #'? #'& #'= #'< #'> #'[ #'] #'{ #'} #'/)))))))
+    (if (and (> (length str) 0) (regexp  "/^-?[0-9]*\.?[0-9]*$/" str))
+	(let ((var (parse-float str)))
+	  (if (is-float str)
+	      (parse-float str)
+                (let ((str (up-case str))
+		      (m (regexp "/^(.*?)::?(.*)$/" str)))
+		  (if m
+		      (let ((pak (or (lisp-package::get (aref m 1))
+				     "KEYWORD")))
+                        (find-or-intern pak (aref m 2)))
+                (let ((pak  (intern (lisp-package::get "%") "*PACKAGE*")))
+		  (if  (pak.value)
+		       (find-or-intern str)
+		       (lisp-symbol-get str))))))))))
+
+
+(defun read-char ()
+  (let ((ch (+ (next)
+	       (read-while
+		(lambda (ch)
+		  (or (and (>= ch #'a) (<= ch #'z))
+		      (and (>= ch #'A) (<= ch #'Z))
+		      (and (>= ch #'0) (<= ch #'9))
+		      (member ch '(#\- #\_))))))))
+    (if (> (length ch) 1)
+	(if (regexp::test "/^U[0-9a-f]{4}$/i" ch)
+	    (setf ch (lisp-char-from-code (parse-int (substr ch) 16)))
+	    (progn
+                                ch = LispChar.fromName(ch);
+                                if (ch == null)
+                                        croak("Unknown character name: " + ch);
+                        }
+                        return ch;
+                }
+                return LispChar.get(ch);
+        };
+
+
+(function(LC){
+
+        var cons = LC.cons
+        , car = LC.car
+        , cdr = LC.cdr
+        , cadr = LC.cadr
+        , caddr = LC.caddr
+        , cadddr = LC.cadddr
+        , cddr = LC.cddr
+        , cdddr = LC.cdddr
+        , length = LC.len
+        , list = LC.fromArray;
+
+        function find_var(name, type, env) {
+                env = env.stuff;
+                for (var i = 0; i < env.length; ++i) {
+                        var frame = env[i];
+                        for (var j = 0; j < frame.length; ++j) {
+                                var el = frame[j];
                                 if (el.name == name && el.type == type)
                                         ([ i j ]
                         }
