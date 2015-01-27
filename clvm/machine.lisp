@@ -110,9 +110,14 @@
 
 (defmacro splice-code (statistic-variable steps-to-snip &optional (array-to-insert nil))
   (let ((rest-of-code
-)
+))))
 
-(defmethod optimize-code ((lm lisp-machine))
+(defmethod optimize-code ((lm lisp-machine) code)
+  "optimize snippets of assembly code before assembling them to the virtual machine."
+  (labels ((find-target (code label)
+
+
+
   (let ((el (aref code i)))
     (if (lm-symbolp el)
 	(if (not (used-label code el))
@@ -122,11 +127,27 @@
 	    nil))
     (case (aref el 0)
       ('vars (= (aref el 1) 1)
+
 (defmethod find-target ((lm lisp-machine) code label)
   (gethash code label))
 
 (defmethod use-label-p ((lm lisp-machine) code label)
   (gethash code label))
+
+
+(defun constantp (x)
+  (or (eq x  t)
+      (eq x nil)
+      (typep x 'number)
+      (typep x 'string)
+      (regexp-p x)
+      (lisp-char-p x)
+      (lisp-symbol x)))
+
+
+(defun jump-instructionp (op)
+  (member op '('jump 'tjump 'fjump lret 'ljump 'upopen 'save 'catch)))
+
 
 (defmethod assemble ((lm lisp-machine) code)
                 function optimize1(code, i) {
@@ -343,52 +364,7 @@
                 };
         })();
 
-        function constantp(x) {
-                return x === true ||
-                        x === null ||
-                        typeof x == "number" ||
-                        typeof x == "string" ||
-                        x instanceof RegExp ||
-                        LispChar.is(x) ||
-                        LispSymbol.is(x);
-        };
 
-        function is_jump_instruction(op) {
-                switch (op) {
-                    case "JUMP":
-                    case "TJUMP":
-                    case "FJUMP":
-                    case "LRET":
-                    case "LJUMP":
-                    case "UPOPEN":
-                    case "SAVE":
-                    case "CATCH":
-                        return true;
-                }
-        };
-
-        function assemble(code) {
-                optimize(code);
-                var ret = [];
-                for (var i = 0; i < code.length; ++i) {
-                        var el = code[i];
-                        if (LispSymbol.is(el)) el.value = ret.length;
-                        else ret.push(el);
-                }
-                for (var i = ret.length; --i >= 0;) {
-                        var el = ret[i];
-                        switch (el[0]) {
-                            case "FN":
-                                ret[i] = OPS.FN.make(assemble(el[1]), el[2]);
-                                break;
-                            default:
-                                if (is_jump_instruction(el[0]))
-                                        el[1] = el[1].value;
-                                ret[i] = OPS[el[0]].make.apply(null, el.slice(1));
-                        }
-                }
-                return ret;
-        };
 
         function relocate(code, addr) {
                 for (var i = code.length; --i >= 0;) {
@@ -399,19 +375,8 @@
                 return code;
         };
 
-        D.assemble = assemble;
-        D.constantp = constantp;
-        D.relocate = relocate;
 
-        ////// <disassemble>
-
-        var INDENT_LEVEL = 8;
-
-        function indent(level) {
-                return repeat_string(' ', level * INDENT_LEVEL);
-        };
-
-        D.disassemble = function(code) {
+	        D.disassemble = function(code) {
                 var lab = 0;
                 function disassemble(code, level) {
                         var labels = {};
@@ -467,62 +432,67 @@
                 return strip ? code : "[" + code + "]";
         };
 
-        D.unserialize = function(code) {
-                var names = [], values = [];
-                for (var i in OPS) if (HOP(OPS, i)) {
-                        var op = OPS[i];
-                        names.push(i);
-                        values.push(op.make);
-                }
-                names.push("s"); values.push(function(name, pak){
-                        if (pak != null) {
-                                pak = LispPackage.get(pak);
-                                return LispSymbol.get(name, pak);
-                        }
-                        return new LispSymbol(name);
-                });
-                names.push("p"); values.push(function(name){
-                        return LispPackage.get(name);
-                });
-                names.push("l"); values.push(function(){
-                        return LispCons.fromArray(slice(arguments));
-                });
-                names.push("c"); values.push(function(char){
-                        return LispChar.get(char);
-                });
-                names.push("DOT"); values.push(LispCons.DOT);
-                var func = new Function("return function(" + names.join(",") + "){return[" + code + "]}")();
-                code = func.apply(null, values);
-                return code;
-        };
+(defvar *indent-level* 8)
 
-        function serialize_const(val) {
-                if (val === null || val === true) return val + "";
-                if (LispSymbol.is(val) || LispPackage.is(val) || LispChar.is(val)) return val.serialize();
-                if (val instanceof RegExp) return val.toString();
-                if (LispCons.is(val)) return "l(" + LispCons.toArray(val).map(serialize_const).join(",") + ")";
-                if (val instanceof Array) return "[" + val.map(serialize_const).join(",") + "]";
-                if (typeof val == "string") return LispChar.sanitize(JSON.stringify(val));
-                return val + "";
-        };
+(defun indent (level)
+  (make-string (* level *indent-level*) #\Space))
 
-        D.serialize_const = serialize_const;
 
-        var OP = DEFCLASS("NOP", null, function(D, P){
-                P._disp = function() {
-                        var self = this;
-                        return self._name + "(" + self._args.map(function(el){
-                                return serialize_const(self[el]);
-                        }).join(",") + ")";
-                };
-        });
+(defun unserialize (code)
+  (let ((names '())
+	(values '()))
+    (loop for i in ops
+	 (if (hop (ops, i))
+	     (let ((op  (aref ops i)))
+	       (push i names)
+	       (push (make op) value))
+	     (push 's names)
+	     (if package
+		 (progn
+		   (let ((pak (lm-lisp-package-get package))
+			 (return (lm-lisp-symbol-get name package)))))
+		 (return (make-instance 'lm-lisp-symbol name))))
+	 (push 'p names)
+	 (return (lm-lisp-symbol-get name package))
+	 (push 'l name)
+	 (return (lm-lisp-cons (slice arguments)))
+	 (push 'c names)
+	 (lm-lisp-char-get char)
+	 (push 'dot names)
+	 (progn
+	   (let ((func (lambda () "blahblahbla"))
+		 (code (funcall func (list null, values))))
+                code)))))
 
-        function defop(name, args, proto) {
-                args = args ? args.split(" ") : [];
-                var ctor = new Function(
-                        "return function " + name + "(" + args.join(", ") + "){ " +
-                                args.map(function(arg){
-                                        return "this." + arg + " = " + arg;
+(defun serialize-const (val)
+  (cond ((eq val nil) "nil")
+	((eq val t) "t")
+	(or (lm-lisp-symbol-p val)
+	    (lm-lisp-package-p val))))
+
+(defun push-clojure ((lm lisp-machine) assembled-code)
+  (let ((continuation (make-instance 'lm-lisp-cons (list (make-continuation machine))))
+	(closure (make-instance 'lm-lisp-closure continuation nil continuation)))
+
+(defop 'cc
+    0
+  (assoc (lambda (assembled-code)
+	   (lambda (machine)
+	     (let ((continuation (make-instance 'lm-lisp-cons (list (make-continuation machine)))))
+	       (push (make-instance 'lm-lisp-closure continuation nil continuation) machine))))
+	 '()
+	 :run)
+  (assemble '(('args 1)
+	      ('lvar 1 0)
+	      ('setcc)
+	      ('lvar 0 0)
+	      ('ret))))
+
+(defun defop (name args proto)
+  (let ((args (or (and args (split args " "))
+		  '()))
+	(ctor `(defun ,name (,@args)
+		 (mapcar (lambda (arg)
                                 }).join("; ") + "; this.INIT() };"
                 )();
                 ctor.prototype = new OP;
