@@ -1,4 +1,4 @@
 (defpackage :clvm
-  (:use :cl)
+  (:use :cl :yacc)
   (:export #:lm-cons
 	   ))

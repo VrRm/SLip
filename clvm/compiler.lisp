@@ -1,3 +1,5 @@
+(in-package :clvm)
+
 (defclass input-stream ()
   ((pos :accessor pos :initform 0)
    (line :accessor line :initform 0)
