@@ -114,30 +114,40 @@
 (defun make-parse-string (str)
   (make-instance 'parse-string :internal-string str))
 
+
+(defclass reg-exp ()
+  ((pattern :accessor pattern :initarg :pattern)
+   (modifiers :accessor modifiers :initarg :modifiers)))
+
+(defun make-reg-exp (pattern modifiers)
+  (make-instance 'reg-exp :pattern pattern :modifiers modifiers))
+
 (defun read-regexp (stream)
   (let ((str (read-escaped stream #\/ #\/ t))
 	(mods
-	 ((alpha-char-p c)
-	  (let ((buffer (make-array 10 :element-type 'character
-				    :fill-pointer 0)))
-	    (do ((c c (read-char stream nil nil)))
-		((not (member c '(#\y #\m #\g #\i)))
-		 (unless (null c) (unread-char c stream))
-		 (values 'id (string-downcase (copy-seq buffer))))
-	      (vector-push-extend c buffer))))))
+	 (let ((buffer (make-array 10 :element-type 'character
+				   :fill-pointer 0)))
+	   (do ((c (read-char stream nil nil)
+		   (read-char stream nil nil)))
+	       ((not (member c '(#\y #\m #\g #\i)))
+		(unless (null c) (unread-char c stream))
+		(string-downcase (copy-seq buffer)))
+	     (vector-push-extend c buffer)))))
     (make-reg-exp str mods)))
 
 (defun skip (stream expected)
   (unless (eq (read-char stream) expected)
     (error "Expecting character ~a from stream" expected)))
 
+
 (defun read-escaped (stream start end include-escape)
   (skip stream start)
   (let ((escaped  nil)
 	(str  ""))
     (let ((buffer (make-array 10 :element-type 'character
-                                 :fill-pointer 0)))
-      (do ((c c (read-char stream nil nil)))
+			      :fill-pointer 0)))
+      (do ((c (read-char stream nil nil)
+	      (read-char stream nil nil)))
 	  ((and (not escaped) (eq c end))
 	   (copy-seq buffer))
 	(cond
@@ -145,7 +155,7 @@
 		   (setf escaped nil))
 	  ((eq c #\\)
 	   (if include-escape (vector-push-extend c buffer))
-	   (setf escape t))
+	   (setf escaped t))
 	  (t (vector-push-extend c buffer)))))))
 
 
@@ -154,7 +164,7 @@
     (cond
       ((null c) (values nil nil))
       ((member c '(#\, #\Space #\Tab #\Newline)) (simple-lexer stream))
-      ((member c '(#\+ #\- #\* #\/ #\( #\) #\[ #\]))
+      ((member c '(#\( #\) #\[ #\]))
        (let ((v (intern (string c))))
          (values v v)))
       ((digitp c)
@@ -176,7 +186,7 @@
        ;; read Javascript style regular expression
        (progn
 	 (unread-char c stream)
-	 (values 'str (read-regexp stream))))
+	 (values 'reg-exp (read-regexp stream))))
       ((alpha-char-p c)
        (let ((buffer (make-array 10 :element-type 'character
                                  :fill-pointer 0)))
@@ -200,7 +210,7 @@
 		   (simple-lexer s)
 		   (simple-lexer s)))
 
-(setf e "(\"x\"+3)+y*z")
+
 (setf e (concatenate 'string
 		     "CONST(\"%\"),"
 		     "PRIM(s(\"%FIND-PACKAGE\",\"%\"),1),"
@@ -210,7 +220,7 @@
 
 (define-parser *fasl-parser*
   (:start-symbol args)
-  (:terminals (int str id + - * / |(| |)| |[| |]|))
+  (:terminals (reg-exp int str id + - * / |(| |)| |[| |]|))
   (:precedence ((:left * /) (:left + -)))
   (expression
    (id |(| args |)|)
@@ -220,6 +230,7 @@
    id
    int
    str
+   reg-exp
    (|(| expression |)| #'k-2-3))
   (args
    expression
