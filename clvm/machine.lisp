@@ -1,5 +1,18 @@
+(defclass lisp-call-stack ()
+((stack :initarg :stack))
+)
+
+(defun create-lisp-call-stack ()
+  (make-instance 'lisp-call-stack
+		 :stack (make-array 50
+				    :element-type 'character
+				    :fill-pointer 0)))
+
+
+
 (defclass lisp-cleanup
 )
+
 (defclass lisp-ret)
 
 (defmethod run ((lr lisp-return))
@@ -34,7 +47,8 @@
 (defmethod run ((ldb lisp-dynamic-binding))
   )
 
-(defclass lisp-machine
+(defclass lisp-machine ()
+  ((call-stack :initarg :call-stack))
 )
 
 (defmethod init ((lm lisp-machine))
